@@ -82,16 +82,13 @@ services:
     networks:
       - prefect
 
-
-
-
   app:
     build:
       context: .
       dockerfile: app/app.Dockerfile
     command: python3 /usr/app/weather.py
     volumes:
-      - ./app:/usr/app:ro
+      - ./app/weather:/usr/app:ro
     environment:
       PREFECT_API_URL: ${PREFECT_API_URL}
       MINIO_USE_SSL: ${MINIO_USE_SSL}
