@@ -63,7 +63,7 @@ services:
       PREFECT_ORION_DATABASE_CONNECTION_URL: postgresql+asyncpg://prefect:test-password@postgres:5432/prefect_server
       PREFECT_ORION_ANALYTICS_ENABLED: "false"
       PREFECT_LOGGING_SERVER_LEVEL: WARNING
-      PREFECT_API_URL: http://prefect-server:4200/api
+      PREFECT_API_URL: http://127.0.0.1:4200/api
     networks:
       - prefect
   prefect-agent:
