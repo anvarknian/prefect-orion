@@ -22,7 +22,7 @@ services:
         target: 5432
     restart: on-failure
     volumes:
-      - postgres:/var/lib/postgresql/data
+      - ./volumes/postgres:/var/lib/postgresql/data
     networks:
       - prefect
   minio:
@@ -31,7 +31,7 @@ services:
       - MINIO_ROOT_USER=blablabla
       - MINIO_ROOT_PASSWORD=blablabla
     volumes:
-      - minio:/data
+      - ./volumes/minio:/data
     entrypoint: /bin/bash
     command: "-c 'mkdir -p /data/prefect-flows && sleep 10 && minio server /data --console-address :9001'"
     ports:
@@ -41,6 +41,10 @@ services:
         target: 9001
     networks:
       - prefect
+
+
+
+
   prefect-server:
     image: ${PREFECT_SERVER_IMAGE}
     command:
@@ -52,8 +56,8 @@ services:
     depends_on:
       - postgres
     volumes:
-      - prefect:/root/.prefect
-      - flows:/flows
+      - ${PWD}/volumes/prefect:/root/.prefect
+      - ${PWD}/flows:/flows
     environment:
       PREFECT_ORION_API_HOST: 0.0.0.0
       PREFECT_ORION_DATABASE_CONNECTION_URL: postgresql+asyncpg://prefect:test-password@postgres:5432/prefect_server
@@ -80,6 +84,10 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - prefect
+
+
+
+
   app:
     build:
       context: .
@@ -100,9 +108,3 @@ services:
 networks:
   prefect:
     name: prefect
-
-volumes:
-  minio:
-  postgres:
-  prefect:
-  flows:
