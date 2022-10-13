@@ -14,17 +14,12 @@ from prefect import flow, get_run_logger, task
 from prefect.deployments import Deployment
 from prefect.filesystems import RemoteFileSystem
 
+
 # --- Flow definition
 
 
 @task
-def create_bucket(
-    minio_endpoint,
-    minio_access_key,
-    minio_secret_key,
-    minio_use_ssl,
-    bucket_name,
-):
+def create_bucket(minio_endpoint, minio_access_key, minio_secret_key, minio_use_ssl, bucket_name, ):
     client = Minio(
         minio_endpoint, minio_access_key, minio_secret_key, secure=minio_use_ssl
     )
@@ -59,14 +54,7 @@ def get_weather(longitude: float, latitude: float):
 
 
 @task
-def add_text_to_bucket(
-    content: str,
-    minio_endpoint,
-    minio_access_key,
-    minio_secret_key,
-    minio_use_ssl,
-    bucket_name,
-):
+def add_text_to_bucket(content: str, minio_endpoint, minio_access_key, minio_secret_key, minio_use_ssl, bucket_name, ):
     client = Minio(
         minio_endpoint, minio_access_key, minio_secret_key, secure=minio_use_ssl
     )
@@ -81,13 +69,8 @@ def add_text_to_bucket(
 
 
 @flow(name="get_paris_weather_s3")
-def get_paris_weather(
-    minio_endpoint: str,
-    minio_access_key: str,
-    minio_secret_key: str,
-    minio_use_ssl: bool,
-    artifacts_bucket_name: str,
-):
+def get_paris_weather(minio_endpoint: str, minio_access_key: str, minio_secret_key: str, minio_use_ssl: bool,
+                      artifacts_bucket_name: str, ):
     city_coordinates = get_city_coordinates("Paris")
     weather_content = get_weather(city_coordinates[0], city_coordinates[1])
     create_bucket(
@@ -118,7 +101,7 @@ if __name__ == "__main__":
     minio_scheme = "https" if minio_use_ssl else "http"
     minio_access_key = os.environ.get("MINIO_ACCESS_KEY")
     minio_secret_key = os.environ.get("MINIO_SECRET_KEY")
-
+    endpoint_url = f"{minio_scheme}://{minio_endpoint}"
     flow_identifier = datetime.today().strftime("%Y%m%d%H%M%S-") + str(uuid.uuid4())
     block_storage = RemoteFileSystem(
         basepath=f"s3://{bucket_name}/{flow_identifier}",
@@ -127,7 +110,7 @@ if __name__ == "__main__":
             use_ssl=minio_use_ssl,
             key=minio_access_key,
             secret=minio_secret_key,
-            client_kwargs=dict(endpoint_url=f"{minio_scheme}://{minio_endpoint}"),
+            client_kwargs=dict(endpoint_url=endpoint_url),
         ),
     )
     block_storage.save("s3-storage", overwrite=True)
