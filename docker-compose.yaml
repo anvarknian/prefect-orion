@@ -1,14 +1,6 @@
 version: '3.5'
 
-networks:
-  prefect:
-    name: prefect
-
-
 services:
-  # --------------------------------------#
-  #               Postgres                #
-  # --------------------------------------#
   postgres:
     image: postgres:14
     command:
@@ -26,16 +18,29 @@ services:
       test: pg_isready -q -d $${POSTGRES_DB} -U $${POSTGRES_USER} | grep "accepting connections" || exit 1
       timeout: 2s
     ports:
-    - published: 5433
-      target: 5432
+      - published: 5433
+        target: 5432
     restart: on-failure
     volumes:
-      - ./volumes/postgres:/var/lib/postgresql/data
+      - postgres:/var/lib/postgresql/data
     networks:
       - prefect
-  # --------------------------------------#
-  #             Prefect Server            #
-  # --------------------------------------#
+  minio:
+    image: minio/minio
+    environment:
+      - MINIO_ROOT_USER=blablabla
+      - MINIO_ROOT_PASSWORD=blablabla
+    volumes:
+      - minio:/data
+    entrypoint: /bin/bash
+    command: "-c 'mkdir -p /data/prefect-flows && sleep 10 && minio server /data --console-address :9001'"
+    ports:
+      - published: 9000
+        target: 9000
+      - published: 9001
+        target: 9001
+    networks:
+      - prefect
   prefect-server:
     image: ${PREFECT_SERVER_IMAGE}
     command:
@@ -45,11 +50,10 @@ services:
     ports:
       - 4200:4200
     depends_on:
-      postgres:
-        condition: service_started
+      - postgres
     volumes:
-      - ${PWD}/volumes/prefect:/root/.prefect
-      - ${PWD}/flows:/flows
+      - prefect:/root/.prefect
+      - flows:/flows
     environment:
       PREFECT_ORION_API_HOST: 0.0.0.0
       PREFECT_ORION_DATABASE_CONNECTION_URL: postgresql+asyncpg://prefect:test-password@postgres:5432/prefect_server
@@ -58,9 +62,6 @@ services:
       PREFECT_API_URL: http://prefect-server:4200/api
     networks:
       - prefect
-  # --------------------------------------#
-  #             Docker Agent              #
-  # --------------------------------------#
   prefect-agent:
     image: ${PREFECT_AGENT_IMAGE}
     command:
@@ -70,8 +71,7 @@ services:
       - -q
       - default
     depends_on:
-      prefect-server:
-        condition: service_started
+      - prefect-server
     environment:
       PREFECT_API_URL: http://prefect-server:4200/api
       PREFECT_LOGGING_LEVEL: DEBUG
@@ -80,23 +80,29 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - prefect
-
-  # --------------------------------------#
-  #         Minio for storage             #
-  # --------------------------------------#
-  minio:
-    image: minio/minio
-    environment:
-      - MINIO_ROOT_USER=blablabla
-      - MINIO_ROOT_PASSWORD=blablabla
+  app:
+    build:
+      context: .
+      dockerfile: app/app.Dockerfile
+    command: python3 /usr/app/weather.py
     volumes:
-      - ./volumes/minio:/data
-    entrypoint: /bin/bash 
-    command: "-c 'mkdir -p /data/prefect-flows && sleep 10 && minio server /data --console-address :9001'"
-    ports:
-      - published: 9000
-        target: 9000
-      - published: 9001
-        target: 9001
-    networks:
-      - prefect
+      - ./app:/usr/app:ro
+    environment:
+      PREFECT_API_URL: "http://192.168.191.134:4200/api"
+      MINIO_USE_SSL: ${MINIO_USE_SSL}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_PREFECT_FLOWS_BUCKET_NAME: ${MINIO_PREFECT_FLOWS_BUCKET_NAME}
+      MINIO_PREFECT_ARTIFACTS_BUCKET_NAME: ${MINIO_PREFECT_ARTIFACTS_BUCKET_NAME}
+    depends_on:
+      - minio
+networks:
+  prefect:
+    name: prefect
+
+volumes:
+  minio:
+  postgres:
+  prefect:
+  flows:
