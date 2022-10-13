@@ -51,6 +51,7 @@ function initialize() {
     start_server
     sleep 1
     set +e
+    cp -r ./flows /var/lib/docker/volumes/prefect-orion_flows/_data
     docker-compose exec prefect-server bash -c 'cd /flows && python ./init_orion.py'
     if [ $? -ne 0 ]; then
         echo "ERROR: prefect server failed to initialize"
@@ -75,14 +76,16 @@ function start() {
         start_server
         sleep 5
     fi
-    docker-compose up -d --force-recreate --no-deps minio prefect-agent
+    docker-compose up -d --force-recreate --no-deps minio
+    docker-compose up -d --force-recreate --no-deps --scale prefect-agent=3 prefect-agent
+
     status
 }
 
 
 function status() {
     echo ''
-    docker-compose ps
+    docker-compose ps -a
     echo ''
 }
 
@@ -96,7 +99,7 @@ function stop() {
 
 function reset() {
     echo 'deleting ALL prefect data'
-    rm -rf volumes
+    docker system prune -a --volumes
     echo 'done!'
 }
 
