@@ -83,9 +83,7 @@ services:
       - prefect
 
   app:
-    build:
-      context: .
-      dockerfile: app/app.Dockerfile
+    build: ./app
     command: python3 /usr/app/weather.py
     volumes:
       - ./app/weather:/usr/app:ro

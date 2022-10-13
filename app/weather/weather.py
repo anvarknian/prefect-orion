@@ -50,14 +50,12 @@ def get_weather(longitude: float, latitude: float):
         logger.debug(weather_data)
         return weather_data
     else:
-        raise Exception("Failed to query " + api_endpoint)
+        raise Exception("Failed to query {}".format(api_endpoint))
 
 
 @task
 def add_text_to_bucket(content: str, minio_endpoint, minio_access_key, minio_secret_key, minio_use_ssl, bucket_name, ):
-    client = Minio(
-        minio_endpoint, minio_access_key, minio_secret_key, secure=minio_use_ssl
-    )
+    client = Minio(minio_endpoint, minio_access_key, minio_secret_key, secure=minio_use_ssl)
     content_json = json.dumps(content)
     client.put_object(
         object_name=f"{datetime.today().strftime('%Y%m%d%H%M%S')}/weather.txt",
@@ -69,25 +67,13 @@ def add_text_to_bucket(content: str, minio_endpoint, minio_access_key, minio_sec
 
 
 @flow(name="get_paris_weather_s3")
-def get_paris_weather(minio_endpoint: str, minio_access_key: str, minio_secret_key: str, minio_use_ssl: bool,
-                      artifacts_bucket_name: str, ):
+def get_paris_weather(minio_endpoint: str, minio_access_key: str,
+                      minio_secret_key: str, minio_use_ssl: bool, artifacts_bucket_name: str, ):
     city_coordinates = get_city_coordinates("Paris")
     weather_content = get_weather(city_coordinates[0], city_coordinates[1])
-    create_bucket(
-        minio_endpoint,
-        minio_access_key,
-        minio_secret_key,
-        minio_use_ssl,
-        artifacts_bucket_name,
-    )
-    add_text_to_bucket(
-        weather_content,
-        minio_endpoint,
-        minio_access_key,
-        minio_secret_key,
-        minio_use_ssl,
-        artifacts_bucket_name,
-    )
+    create_bucket(minio_endpoint, minio_access_key, minio_secret_key, minio_use_ssl, artifacts_bucket_name, )
+    add_text_to_bucket(weather_content, minio_endpoint, minio_access_key, minio_secret_key, minio_use_ssl,
+                       artifacts_bucket_name, )
     return True
 
 
@@ -103,6 +89,7 @@ if __name__ == "__main__":
     minio_secret_key = os.environ.get("MINIO_SECRET_KEY")
     endpoint_url = f"{minio_scheme}://{minio_endpoint}"
     flow_identifier = datetime.today().strftime("%Y%m%d%H%M%S-") + str(uuid.uuid4())
+
     block_storage = RemoteFileSystem(
         basepath=f"s3://{bucket_name}/{flow_identifier}",
         key_type="hash",
@@ -113,6 +100,7 @@ if __name__ == "__main__":
             client_kwargs=dict(endpoint_url=endpoint_url),
         ),
     )
+
     block_storage.save("s3-storage", overwrite=True)
 
     deployment = Deployment.build_from_flow(
