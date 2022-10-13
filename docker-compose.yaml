@@ -70,7 +70,7 @@ services:
       - agent
       - start
       - -q
-      - default
+      - flows-example-queue
     depends_on:
       - prefect-server
     environment:
