@@ -51,7 +51,7 @@ function initialize() {
     start_server
     sleep 1
     set +e
-    cp -r ./flows /var/lib/docker/volumes/prefect-orion_flows/_data
+    cp -r ./flows/* /var/lib/docker/volumes/prefect-orion_flows/_data
     docker-compose exec prefect-server bash -c 'cd /flows && python ./init_orion.py'
     if [ $? -ne 0 ]; then
         echo "ERROR: prefect server failed to initialize"
