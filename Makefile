@@ -19,4 +19,5 @@ docker:
 
 .PHONY: register-test-flow
 register-test-flow: docker_image_cond
+    cp -r ./flows/* /var/lib/docker/volumes/prefect-orion_flows/_data
 	docker-compose exec prefect-server /bin/bash -c 'cd /flows/test_flow && python deployment.py'
