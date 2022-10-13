@@ -98,7 +98,8 @@ function stop() {
 
 function reset() {
     echo 'deleting ALL prefect data'
-    docker system prune -a --volumes
+    docker system prune -a
+    rm -rf volumes
     echo 'done!'
 }
 
