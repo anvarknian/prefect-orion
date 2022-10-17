@@ -31,10 +31,18 @@ Start the stack:
 ```
 
 The prefect.sh script initializes postgres and starts all services. Data (postgres, minio) is stored in a folder named `volumes`
-Give the start command a few seconds, specially the first time since postgres and prefect need to be initializated
+Give the start command a few seconds, specially the first time since postgres and prefect need to be initialized
 Open http://prefect-server:4200 in your browser and verify Prefect UI is up and running
-Deploy test flow and deployment
-        
+
+
+Deploy client app to S3(minio):
+```bash 
+docker-compose up -d app
+```
+
+**OR**
+
+Deploy client app to Docker registry:
 ```bash 
 make register-test-flow
 ```
